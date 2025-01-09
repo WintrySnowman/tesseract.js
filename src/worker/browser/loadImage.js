@@ -61,6 +61,9 @@ const loadImage = async (image) => {
     data = await readFromBlobOrFile(blob);
   } else if (image instanceof File || image instanceof Blob) {
     data = await readFromBlobOrFile(image);
+  } else if (typeof ImageData !== 'undefined' && image instanceof ImageData) {
+    // Pass through ImageData as-is, which will then be handled by setImage()
+    return image;
   }
 
   return new Uint8Array(data);

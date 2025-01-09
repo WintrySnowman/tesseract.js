@@ -1,5 +1,10 @@
 const bmp = require('bmp-js');
 
+// Maintain the most-recently-used buffer in memory,
+// which will be freed on the next call to setImage(),
+// or when the worker shuts down.
+let pixBuffer = null;
+
 /**
  * setImage
  *
@@ -8,6 +13,26 @@ const bmp = require('bmp-js');
  * @access public
  */
 module.exports = (TessModule, api, image, angle = 0) => {
+  // Free any previous buffer
+  if (pixBuffer !== null) {
+    TessModule._free(pixBuffer);
+    pixBuffer = null;
+  }
+
+  // For performance, allow the use of ImageData directly.
+  // However, note that ImageData byte order is RGBA, whilst
+  // Leptonica pix is BGRA. This should not matter for OCR
+  // purposes, so we'll skip any extra transformation steps.
+  // Reference: https://github.com/DanBloomberg/leptonica/blob/76c635ceeebcb78ecd22807171c2e2c21c58e05f/src/pix_internal.h#L213
+  if (typeof ImageData !== 'undefined' && image instanceof ImageData) {
+    if (angle != 0) throw Error('Non-zero angles unsupported when using ImageData');
+
+    pixBuffer = TessModule._malloc(image.data.byteLength);
+    TessModule.HEAPU8.set(image.data, pixBuffer);
+    api.SetImage(pixBuffer, image.width, image.height, 4, image.width * 4);
+    return;
+  }
+
   // Check for bmp magic numbers (42 and 4D in hex)
   const isBmp = (image[0] === 66 && image[1] === 77) || (image[1] === 66 && image[0] === 77);
 
