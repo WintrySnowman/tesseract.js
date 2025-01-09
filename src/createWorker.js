@@ -234,11 +234,18 @@ module.exports = async (langs = 'eng', oem = OEM.LSTM_ONLY, _options = {}, confi
     terminate,
   };
 
-  loadInternal()
-    .then(() => loadLanguageInternal(langs))
-    .then(() => initializeInternal(langs, oem, config))
-    .then(() => workerResResolve(resolveObj))
-    .catch(() => {});
+  try {
+    await loadInternal();
+    await loadLanguageInternal(langs);
+    await initializeInternal(langs, oem, config);
 
-  return workerRes;
+    // Resolve, unless the worker has errored first.
+    workerResResolve(resolveObj);
+    return await workerRes;
+  } catch (error) {
+    // Terminate worker upon any error during initialisation,
+    // to prevent leaving anything hanging in the background.
+    terminateWorker(worker);
+    throw error;
+  }
 };
