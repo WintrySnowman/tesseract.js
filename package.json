@@ -11,7 +11,7 @@
     "build": "rimraf dist && webpack --config scripts/webpack.config.prod.js && rollup -c scripts/rollup.esm.mjs",
     "profile:tesseract": "webpack-bundle-analyzer dist/tesseract-stats.json",
     "profile:worker": "webpack-bundle-analyzer dist/worker-stats.json",
-    "prepublishOnly": "npm run build",
+    "prepare": "npm run build",
     "wait": "rimraf dist && wait-on http://localhost:3000/dist/tesseract.min.js",
     "test": "npm-run-all -p -r start test:all",
     "test:all": "npm-run-all wait test:browser:* test:node:all",
